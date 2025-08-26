@@ -156,7 +156,7 @@ if __name__ == '__main__':
     
     # --- 加载数据并调整大小 ---
     # 为了在Fashion-MNIST上快速训练，将图像缩小到 96x96
-    train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size, resize=96, num_workers=0)
+    train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size, resize=96)
 
     # --- 开始训练 ---
     train_ch6(net, train_iter, test_iter, num_epochs, lr, device)
