@@ -73,10 +73,16 @@ def train(net, train_iter, test_iter, num_epochs, lr, device):
             y_hat = net(X)
             l = loss(y_hat, y)
             l.backward()
+            # mps: loss.backward()后建议同步，避免异步导致崩溃
+            if device.type == 'mps':
+                torch.mps.synchronize()
             optimizer.step()
             with torch.no_grad():
                 metric.add(l * X.shape[0], d2l.accuracy(y_hat, y), X.shape[0])
             timer.stop()
+        # mps: epoch结束后建议清理缓存
+        if device.type == 'mps':
+            torch.mps.empty_cache()
         train_l = metric[0] / metric[2]
         train_acc = metric[1] / metric[2]
         test_acc = evaluate_accuracy_gpu_fixed(net, test_iter, device)
