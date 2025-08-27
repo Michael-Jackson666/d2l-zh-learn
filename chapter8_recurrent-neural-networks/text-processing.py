@@ -1,6 +1,7 @@
 import collections
 import re
 from d2l import torch as d2l
+'''文本预处理'''
 
 # --- 1. 数据读取 ---
 # 定义数据源并提供下载功能
@@ -31,55 +32,67 @@ def count_corpus(tokens):
     if len(tokens) > 0 and isinstance(tokens[0], list):
         tokens = [token for line in tokens for token in line]
     return collections.Counter(tokens)
-
+    
 class Vocab:
-    """文本词表"""
+    """文本词表类，负责将文本词元映射到数字索引"""
     def __init__(self, tokens=None, min_freq=0, reserved_tokens=None):
-        if tokens is None:
-            tokens = []
-        if reserved_tokens is None:
-            reserved_tokens = []
+        """
+        构造函数
+        :param tokens: 语料库，可以是词元的一维或二维列表
+        :param min_freq: 最小词频，低于此频率的词将被丢弃
+        :param reserved_tokens: 保留的特殊词元列表，如<pad>, <bos>, <eos>
+        """
+        if tokens is None: tokens = []
+        if reserved_tokens is None: reserved_tokens = []
         
-        # 统计词频并按频率降序排序
+        # 统计词频
         counter = count_corpus(tokens)
+        # 按词频从高到低排序
         self._token_freqs = sorted(counter.items(), key=lambda x: x[1], reverse=True)
         
-        # 构建索引到词元(idx_to_token)和词元到索引(token_to_idx)的映射
-        # <unk>是未知词元，索引为0
+        # 构建从索引到词元(idx_to_token)和从词元到索引(token_to_idx)的映射
+        # '<unk>' 代表未知词元，它的索引固定为0。然后添加其他保留词元。
         self.idx_to_token = ['<unk>'] + reserved_tokens
         self.token_to_idx = {token: idx for idx, token in enumerate(self.idx_to_token)}
         
+        # 遍历排序后的词频列表，将满足条件的词元添加到词表中
         for token, freq in self._token_freqs:
             if freq < min_freq:
+                # 后面的词频更低，直接跳出循环
                 break
             if token not in self.token_to_idx:
+                # 将新词元添加到映射中
                 self.idx_to_token.append(token)
                 self.token_to_idx[token] = len(self.idx_to_token) - 1
 
     def __len__(self):
+        """返回词表的大小"""
         return len(self.idx_to_token)
 
     def __getitem__(self, tokens):
         """查找单个或多个词元的索引"""
         if not isinstance(tokens, (list, tuple)):
+            # 如果是单个词元，返回其索引。如果不在词表中，返回未知词元的索引(0)
             return self.token_to_idx.get(tokens, self.unk)
+        # 如果是词元列表，递归调用自身
         return [self.__getitem__(token) for token in tokens]
 
     def to_tokens(self, indices):
-        """根据索引查找词元"""
+        """根据索引列表返回对应的词元列表"""
         if not isinstance(indices, (list, tuple)):
             return self.idx_to_token[indices]
         return [self.idx_to_token[index] for index in indices]
 
     @property
     def unk(self):
-        """未知词元的索引"""
+        """未知词元的索引始终为0"""
         return 0
 
     @property
     def token_freqs(self):
-        """返回词频列表"""
+        """返回按频率排序的词元列表"""
         return self._token_freqs
+
 
 # --- 4. 整合函数：加载并处理时光机器数据集 ---
 def load_corpus_time_machine(max_tokens=-1):
