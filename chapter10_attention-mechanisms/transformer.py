@@ -8,11 +8,9 @@ import os
 import time
 
 # --- 数据处理函数 ---
-#@save
 d2l.DATA_HUB['fra-eng'] = (d2l.DATA_URL + 'fra-eng.zip',
                            '94646ad1522d915e7b0f9296181140edcf86a4f5')
 
-#@save
 def read_data_nmt():
     """载入"英语－法语"数据集"""
     data_dir = d2l.download_extract('fra-eng')
@@ -208,7 +206,6 @@ def try_gpu(i=0):
     #     return torch.device('mps')
     return torch.device('cpu')
 
-#@save
 def sequence_mask(X, valid_len, value=0):
     """在序列中屏蔽不相关的项"""
     maxlen = X.size(1)
@@ -287,7 +284,6 @@ class DotProductAttention(nn.Module):
         self.attention_weights = masked_softmax(scores, valid_lens)
         return torch.bmm(self.dropout(self.attention_weights), values)
 
-#@save
 class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
     """带遮蔽的softmax交叉熵损失函数"""
     def forward(self, pred, label, valid_len):
