@@ -10,11 +10,14 @@
 
 ## 仓库内容
 
-*   **`/chapter3_linear-networks`**: 线性神经网络（线性回归、Softmax回归等）的学习代码和笔记。
-*   **`/chapter4_multilayer-perceptron`**: 多层感知机的实现和相关理论的总结。
-*   **`/chapter5_deep-learning-computation`**: 深度学习计算的学习笔记。
-*   **`/chapter6_convolutional-neural-networks`**: 卷积神经网络的学习笔记。
-*   **`/chapter7_convolutional-modern`**: 现代卷积神经网络的学习笔记。
+*   **`/chapter3_linear-networks`**: 线性神经网络（线性回归、Softmax回归等）。
+*   **`/chapter4_multilayer-perceptron`**: 多层感知机的实现和相关理论。
+*   **`/chapter5_deep-learning-computation`**: 深度学习计算。
+*   **`/chapter6_convolutional-neural-networks`**: 卷积神经网络。
+*   **`/chapter7_convolutional-modern`**: 现代卷积神经网络。
+*   **`/chapter8_recurrent-neural-networks`**: 循环神经网络。
+*   **`/chapter9_recurrent-modern`**: 现代循环神经网络。
+*   **`/chapter10_attention-machanisms`**: 注意力机制。
 *   *... (后续章节会持续更新)*
 
 ## 我的学习重点
