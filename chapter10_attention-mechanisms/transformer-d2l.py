@@ -570,6 +570,71 @@ def train_seq2seq(net, data_iter, lr, num_epochs, tgt_vocab, device):
     print(f'训练完成! 最终loss {final_loss:.3f}, {final_tokens_per_sec:.1f} tokens/sec on {str(device)}')
     return net
 
+def save_model(net, src_vocab, tgt_vocab, model_path='transformer_model.pth'):
+    """保存训练好的模型和词汇表"""
+    checkpoint = {
+        'model_state_dict': net.state_dict(),
+        'src_vocab': src_vocab,
+        'tgt_vocab': tgt_vocab,
+        'model_config': {
+            'src_vocab_size': len(src_vocab),
+            'tgt_vocab_size': len(tgt_vocab)
+        }
+    }
+    torch.save(checkpoint, model_path)
+    print(f"模型已保存到: {model_path}")
+
+def load_model(model_path='transformer_model.pth', device='cpu'):
+    """加载训练好的模型和词汇表"""
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"模型文件不存在: {model_path}")
+    
+    checkpoint = torch.load(model_path, map_location=device)
+    src_vocab = checkpoint['src_vocab']
+    tgt_vocab = checkpoint['tgt_vocab']
+    
+    # 重建模型架构 (使用训练时的参数)
+    num_hiddens, num_layers, dropout = 32, 2, 0.1
+    ffn_num_input, ffn_num_hiddens, num_heads = 32, 64, 4
+    key_size, query_size, value_size = 32, 32, 32
+    norm_shape = [32]
+    
+    encoder = TransformerEncoder(
+        len(src_vocab), key_size, query_size, value_size, num_hiddens,
+        norm_shape, ffn_num_input, ffn_num_hiddens, num_heads,
+        num_layers, dropout)
+    decoder = TransformerDecoder(
+        len(tgt_vocab), key_size, query_size, value_size, num_hiddens,
+        norm_shape, ffn_num_input, ffn_num_hiddens, num_heads,
+        num_layers, dropout)
+    net = EncoderDecoder(encoder, decoder)
+    
+    # 加载模型参数
+    net.load_state_dict(checkpoint['model_state_dict'])
+    net.to(device)
+    net.eval()  # 设置为评估模式
+    
+    print(f"模型已从 {model_path} 加载")
+    return net, src_vocab, tgt_vocab
+
+def translate_with_saved_model(model_path, sentences, num_steps=10, device=None):
+    """使用保存的模型进行翻译"""
+    if device is None:
+        device = try_gpu()
+    
+    # 加载模型
+    net, src_vocab, tgt_vocab = load_model(model_path, device)
+    
+    print("开始翻译...")
+    results = []
+    for sentence in sentences:
+        translation, _ = predict_seq2seq(
+            net, sentence, src_vocab, tgt_vocab, num_steps, device)
+        results.append(translation)
+        print(f'{sentence} => {translation}')
+    
+    return results
+
 def predict_seq2seq(net, src_sentence, src_vocab, tgt_vocab, num_steps,
                     device, save_attention_weights=False):
     """序列到序列模型的预测"""
@@ -613,6 +678,20 @@ def bleu(pred_seq, label_seq, k):
 
 # --- 执行训练和评估 ---
 if __name__ == '__main__':
+    # 设置模型保存路径
+    model_save_path = 'transformer_fra_eng.pth'
+    
+    # 检查是否已有训练好的模型
+    if os.path.exists(model_save_path):
+        print(f"发现已保存的模型: {model_save_path}")
+        choice = input("是否要使用已保存的模型进行翻译？(y/n): ")
+        
+        if choice.lower() == 'y':
+            # 使用保存的模型进行翻译
+            test_sentences = ['go .', "i lost .", 'he\'s calm .', 'i\'m home .']
+            results = translate_with_saved_model(model_save_path, test_sentences)
+            exit()
+    
     print("正在初始化 Transformer 模型...")
     num_hiddens, num_layers, dropout, batch_size, num_steps = 32, 2, 0.1, 64, 10
     lr, num_epochs, device = 0.005, 50, try_gpu()  # 减少训练轮数用于测试
@@ -637,7 +716,10 @@ if __name__ == '__main__':
     net = EncoderDecoder(encoder, decoder)
     
     print(f"开始训练，设备: {device}")
-    train_seq2seq(net, train_iter, lr, num_epochs, tgt_vocab, device)
+    net = train_seq2seq(net, train_iter, lr, num_epochs, tgt_vocab, device)
+    
+    # 保存训练好的模型
+    save_model(net, src_vocab, tgt_vocab, model_save_path)
 
     print("开始评估...")
     # 评估
@@ -647,3 +729,5 @@ if __name__ == '__main__':
         translation, _ = predict_seq2seq(
             net, eng, src_vocab, tgt_vocab, num_steps, device)
         print(f'{eng} => {translation}, bleu {bleu(translation, fra, k=2):.3f}')
+    
+    print(f"\n模型已保存为 {model_save_path}，下次可直接加载使用！")
